@@ -1,9 +1,5 @@
 from pydantic import BaseModel, Field
 from typing import Optional, Literal
-from fastapi import FastAPI
-
-app = FastAPI()
-
 
 # Clase Mesa
 class Mesa(BaseModel):

@@ -1,8 +1,5 @@
 from datetime import datetime
 from typing import Optional
-from fastapi import FastAPI
-
-app = FastAPI()
 
 from pydantic import BaseModel, Field, EmailStr
 
