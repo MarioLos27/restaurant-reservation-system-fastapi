@@ -1,4 +1,3 @@
-# Importamos las clases desde sus archivos
-from .cliente import Cliente
-from .mesa import Mesa
-from .reserva import Reserva
+from .cliente import ClienteBase, ClienteCreate, ClienteUpdate, ClienteResponse, ClienteDB
+from .mesa import MesaBase, MesaCreate, MesaUpdate, MesaResponse, MesaDB
+from .reserva import ReservaBase, ReservaCreate, ReservaUpdate, ReservaResponse, ReservaDB

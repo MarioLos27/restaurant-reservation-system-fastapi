@@ -1,12 +1,74 @@
-# app/routers/clientes.py
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException, status, Query, Depends
 from typing import List
-from app.models.cliente import Cliente
+from sqlalchemy.orm import Session
+from app.database import get_db
+from app.models import ClienteCreate, ClienteResponse, ClienteUpdate
 from app.services import cliente_service
 
 router = APIRouter()
 
-# GET /clientes/
-@router.get("/", response_model=List[Cliente])
-def listar_clientes():
-    return cliente_service.obtener_todos_los_clientes()
+@router.get("/", response_model=List[ClienteResponse])
+def listar_clientes(
+    skip: int = 0,
+    limit: int = 100,
+    db: Session = Depends(get_db)
+):
+    """
+    Obtiene el listado de todos los clientes registrados en el sistema.
+    Permite paginación mediante 'skip' (saltar) y 'limit' (límite).
+    """
+    return cliente_service.obtener_todos(db, skip, limit)
+
+@router.get("/buscar/", response_model=List[ClienteResponse])
+def buscar_clientes(
+    q: str = Query(..., description="Nombre, email o teléfono"),
+    db: Session = Depends(get_db)
+):
+    """
+    Busca clientes que coincidan con el término proporcionado.
+    La búsqueda se realiza sobre el nombre, email o teléfono de forma insensible a mayúsculas.
+    """
+    return cliente_service.buscar_clientes(db, q)
+
+@router.get("/{id}", response_model=ClienteResponse)
+def obtener_cliente(id: int, db: Session = Depends(get_db)):
+    """
+    Obtiene los detalles de un cliente específico buscando por su ID único.
+    Si no existe, devuelve un error 404.
+    """
+    cliente = cliente_service.obtener_por_id(db, id)
+    if not cliente:
+        raise HTTPException(status_code=404, detail="Cliente no encontrado")
+    return cliente
+
+@router.post("/", status_code=status.HTTP_201_CREATED, response_model=ClienteResponse)
+def crear_cliente(cliente: ClienteCreate, db: Session = Depends(get_db)):
+    """
+    Registra un nuevo cliente en la base de datos.
+    El modelo valida automáticamente que el email sea válido y el teléfono tenga 9 dígitos.
+    """
+    # Nota: Si el email ya existe, SQLAlchemy lanzará un error de integridad.
+    # Podríamos capturarlo aquí o dejar que el Global Exception Handler lo procese.
+    return cliente_service.crear_cliente(db, cliente)
+
+@router.put("/{id}", response_model=ClienteResponse)
+def actualizar_cliente(id: int, cliente: ClienteUpdate, db: Session = Depends(get_db)):
+    """
+    Actualiza la información de un cliente existente.
+    Solo se modifican los campos que se envíen con valor (no nulos).
+    """
+    resultado = cliente_service.actualizar_cliente(db, id, cliente)
+    if not resultado:
+        raise HTTPException(status_code=404, detail="Cliente no encontrado")
+    return resultado
+
+@router.delete("/{id}", status_code=status.HTTP_204_NO_CONTENT)
+def eliminar_cliente(id: int, db: Session = Depends(get_db)):
+    """
+    Elimina un cliente del sistema.
+    Si el cliente tiene reservas activas, podría fallar dependiendo de la configuración de la BD (Integridad referencial).
+    """
+    exito = cliente_service.eliminar_cliente(db, id)
+    if not exito:
+        raise HTTPException(status_code=404, detail="Cliente no encontrado")
+    return None
