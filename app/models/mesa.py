@@ -1,8 +1,5 @@
 from pydantic import BaseModel, Field
 from typing import Optional, Literal
-from sqlalchemy import Column, Integer, String, Boolean, CheckConstraint
-from sqlalchemy.orm import relationship
-from app.database import Base
 
 # MAIN PYDANTIC MODELS
 
@@ -27,24 +24,3 @@ class MesaUpdate(BaseModel):
 # Response (GET)
 class MesaResponse(MesaBase):
     id: int
-
-    model_config = {
-        "from_attributes": True
-    }
-
-# SQLALCHEMY DB MODEL
-class MesaDB(Base):
-    __tablename__ = "mesas"
-
-    id = Column(Integer, primary_key=True, index=True)
-    numero = Column(Integer, unique=True, nullable=False)
-    capacidad = Column(Integer, nullable=False)
-    ubicacion = Column(String, nullable=False)
-    activa = Column(Boolean, default=True)
-
-    __table_args__ = (
-        CheckConstraint("capacidad IN (2, 4, 6, 8)", name="check_capacidad"),
-        CheckConstraint("ubicacion IN ('interior', 'terraza', 'privado')", name="check_ubicacion"),
-    )
-
-    reservas = relationship("ReservaDB", back_populates="mesa")

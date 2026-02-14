@@ -1,10 +1,6 @@
 from datetime import datetime
 from typing import Optional
 from pydantic import BaseModel, Field, EmailStr
-from sqlalchemy import Column, Integer, String, DateTime
-from sqlalchemy.orm import relationship
-from sqlalchemy.sql import func
-from app.database import Base
 
 # MAIN PYDANTIC MODELS
 
@@ -33,21 +29,4 @@ class ClienteUpdate(BaseModel):
 class ClienteResponse(ClienteBase):
     """Para respuestas (GET)"""
     id: int
-    fecha_registro: datetime
-
-    model_config = {
-        "from_attributes": True
-    }
-
-# SQLALCHEMY DB MODEL
-class ClienteDB(Base):
-    __tablename__ = "clientes"
-
-    id = Column(Integer, primary_key=True, index=True)
-    nombre = Column(String, nullable=False)
-    email = Column(String, unique=True, index=True, nullable=False)
-    telefono = Column(String, nullable=False)
-    notas = Column(String, nullable=True)
-    fecha_registro = Column(DateTime, server_default=func.now())
-
-    reservas = relationship("ReservaDB", back_populates="cliente")
+    fecha_registro: datetime  

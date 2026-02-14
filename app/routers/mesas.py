@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, status, Query, Depends
 from typing import List
 from datetime import datetime
-from sqlalchemy.orm import Session
+from sqlite3 import Connection
 from app.database import get_db
 from app.models import MesaCreate, MesaResponse, MesaUpdate
 from app.services import mesa_service
@@ -9,7 +9,7 @@ from app.services import mesa_service
 router = APIRouter()
 
 @router.get("/", response_model=List[MesaResponse])
-def listar_mesas(db: Session = Depends(get_db)):
+def listar_mesas(db: Connection = Depends(get_db)):
     """
     Devuelve un listado completo de todas las mesas del restaurante.
     """
@@ -19,7 +19,7 @@ def listar_mesas(db: Session = Depends(get_db)):
 def buscar_mesas_disponibles(
     fecha: datetime,
     comensales: int = Query(..., gt=0),
-    db: Session = Depends(get_db)
+    db: Connection = Depends(get_db)
 ):
     """
     Busca mesas que estén libres para una fecha y hora específicas,
@@ -28,7 +28,7 @@ def buscar_mesas_disponibles(
     return mesa_service.buscar_disponibles(db, fecha, comensales)
 
 @router.get("/{id}", response_model=MesaResponse)
-def obtener_mesa(id: int, db: Session = Depends(get_db)):
+def obtener_mesa(id: int, db: Connection = Depends(get_db)):
     """
     Obtiene los datos de una mesa específica por su ID.
     """
@@ -38,7 +38,7 @@ def obtener_mesa(id: int, db: Session = Depends(get_db)):
     return mesa
 
 @router.post("/", status_code=status.HTTP_201_CREATED, response_model=MesaResponse)
-def crear_mesa(mesa: MesaCreate, db: Session = Depends(get_db)):
+def crear_mesa(mesa: MesaCreate, db: Connection = Depends(get_db)):
     """
     Crea una nueva mesa en el sistema.
     Valida que el número de mesa no esté duplicado.
@@ -48,4 +48,12 @@ def crear_mesa(mesa: MesaCreate, db: Session = Depends(get_db)):
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-@router.put("/{id}",
+@router.delete("/{id}", status_code=status.HTTP_204_NO_CONTENT)
+def eliminar_mesa(id: int, db: Connection = Depends(get_db)):
+    try:
+        exito = mesa_service.eliminar_mesa(db, id)
+        if not exito:
+            raise HTTPException(status_code=404, detail="Mesa no encontrada")
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    return None

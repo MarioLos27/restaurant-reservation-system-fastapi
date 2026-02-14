@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, status, Query, Depends
 from typing import List
-from sqlalchemy.orm import Session
+from sqlite3 import Connection
 from app.database import get_db
 from app.models import ClienteCreate, ClienteResponse, ClienteUpdate
 from app.services import cliente_service
@@ -11,7 +11,7 @@ router = APIRouter()
 def listar_clientes(
     skip: int = 0,
     limit: int = 100,
-    db: Session = Depends(get_db)
+    db: Connection = Depends(get_db)
 ):
     """
     Obtiene el listado de todos los clientes registrados en el sistema.
@@ -22,7 +22,7 @@ def listar_clientes(
 @router.get("/buscar/", response_model=List[ClienteResponse])
 def buscar_clientes(
     q: str = Query(..., description="Nombre, email o teléfono"),
-    db: Session = Depends(get_db)
+    db: Connection = Depends(get_db)
 ):
     """
     Busca clientes que coincidan con el término proporcionado.
@@ -31,7 +31,7 @@ def buscar_clientes(
     return cliente_service.buscar_clientes(db, q)
 
 @router.get("/{id}", response_model=ClienteResponse)
-def obtener_cliente(id: int, db: Session = Depends(get_db)):
+def obtener_cliente(id: int, db: Connection = Depends(get_db)):
     """
     Obtiene los detalles de un cliente específico buscando por su ID único.
     Si no existe, devuelve un error 404.
@@ -42,17 +42,19 @@ def obtener_cliente(id: int, db: Session = Depends(get_db)):
     return cliente
 
 @router.post("/", status_code=status.HTTP_201_CREATED, response_model=ClienteResponse)
-def crear_cliente(cliente: ClienteCreate, db: Session = Depends(get_db)):
+def crear_cliente(cliente: ClienteCreate, db: Connection = Depends(get_db)):
     """
     Registra un nuevo cliente en la base de datos.
     El modelo valida automáticamente que el email sea válido y el teléfono tenga 9 dígitos.
     """
-    # Nota: Si el email ya existe, SQLAlchemy lanzará un error de integridad.
-    # Podríamos capturarlo aquí o dejar que el Global Exception Handler lo procese.
-    return cliente_service.crear_cliente(db, cliente)
+    # Nota: Si el email ya existe, SQLite lanzará un error de integridad que el servicio maneja.
+    try:
+        return cliente_service.crear_cliente(db, cliente)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 @router.put("/{id}", response_model=ClienteResponse)
-def actualizar_cliente(id: int, cliente: ClienteUpdate, db: Session = Depends(get_db)):
+def actualizar_cliente(id: int, cliente: ClienteUpdate, db: Connection = Depends(get_db)):
     """
     Actualiza la información de un cliente existente.
     Solo se modifican los campos que se envíen con valor (no nulos).
@@ -63,12 +65,15 @@ def actualizar_cliente(id: int, cliente: ClienteUpdate, db: Session = Depends(ge
     return resultado
 
 @router.delete("/{id}", status_code=status.HTTP_204_NO_CONTENT)
-def eliminar_cliente(id: int, db: Session = Depends(get_db)):
+def eliminar_cliente(id: int, db: Connection = Depends(get_db)):
     """
     Elimina un cliente del sistema.
     Si el cliente tiene reservas activas, podría fallar dependiendo de la configuración de la BD (Integridad referencial).
     """
-    exito = cliente_service.eliminar_cliente(db, id)
-    if not exito:
-        raise HTTPException(status_code=404, detail="Cliente no encontrado")
+    try:
+        exito = cliente_service.eliminar_cliente(db, id)
+        if not exito:
+            raise HTTPException(status_code=404, detail="Cliente no encontrado")
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     return None

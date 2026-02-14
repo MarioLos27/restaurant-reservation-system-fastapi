@@ -1,7 +1,11 @@
+import sqlite3
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
+from app.database import init_db, DB_NAME
 from app.routers import clientes, mesas, reservas, estadisticas
-from app.database import engine, Base
+# Importamos datos de prueba (desde la carpeta en la raíz)
+from data.restaurante import lista_clientes, lista_mesas
+
 # Importamos todas las excepciones
 from app.exceptions import (
     ClienteNoEncontradoError,
@@ -11,15 +15,55 @@ from app.exceptions import (
     FueraDeHorarioError,
     CancelacionNoPermitidaError
 )
-# Importamos modelos Pydantic y DB para que se creen las tablas
-from app.models import ClienteDB, MesaDB, ReservaDB
 
-# Crear tablas
-Base.metadata.create_all(bind=engine)
+# ---------------------------------------------------------
+# 1. CONFIGURACIÓN INICIAL DE BASE DE DATOS Y APP
+# ---------------------------------------------------------
 
+# Crear tablas (usando la función de SQL puro)
+init_db()
+
+# Instancia de la aplicación (Debe ir antes de los decoradores @app)
 app = FastAPI(title="La Mesa Dorada API", version="1.0.0")
 
-#  EXCEPTION HANDLERS
+# ---------------------------------------------------------
+# 2. EVENTOS DE ARRANQUE (DATOS DE PRUEBA)
+# ---------------------------------------------------------
+
+# Evento al arrancar
+@app.on_event("startup")
+def startup_event():
+    # Conexión directa para insertar datos iniciales
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+    
+    try:
+        # Si no hay mesas, las creamos
+        cursor.execute("SELECT COUNT(*) FROM mesas")
+        if cursor.fetchone()[0] == 0:
+            for mesa in lista_mesas:
+                cursor.execute("""
+                    INSERT INTO mesas (numero, capacidad, ubicacion, activa)
+                    VALUES (?, ?, ?, ?)
+                """, (mesa["numero"], mesa["capacidad"], mesa["ubicacion"], mesa["activa"]))
+            conn.commit()
+        
+        # Si no hay clientes, los creamos
+        cursor.execute("SELECT COUNT(*) FROM clientes")
+        if cursor.fetchone()[0] == 0:
+            for cliente in lista_clientes:
+                cursor.execute("""
+                    INSERT INTO clientes (nombre, email, telefono, notas)
+                    VALUES (?, ?, ?, ?)
+                """, (cliente["nombre"], cliente["email"], cliente["telefono"], cliente["notas"]))
+            conn.commit()
+            
+    finally:
+        conn.close()
+
+# ---------------------------------------------------------
+# 3. MANEJADORES DE EXCEPCIONES (EXCEPTION HANDLERS)
+# ---------------------------------------------------------
 
 @app.exception_handler(ClienteNoEncontradoError)
 async def cliente_no_encontrado_handler(request: Request, exc: ClienteNoEncontradoError):
@@ -45,7 +89,9 @@ async def fuera_de_horario_handler(request: Request, exc: FueraDeHorarioError):
 async def cancelacion_no_permitida_handler(request: Request, exc: CancelacionNoPermitidaError):
     return JSONResponse(status_code=400, content={"message": str(exc)})
 
-# ----------------------------------------
+# ---------------------------------------------------------
+# 4. RUTAS (ROUTERS)
+# ---------------------------------------------------------
 
 app.include_router(clientes.router, prefix="/clientes", tags=["Clientes"])
 app.include_router(mesas.router, prefix="/mesas", tags=["Mesas"])
