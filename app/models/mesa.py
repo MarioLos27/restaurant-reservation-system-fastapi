@@ -1,8 +1,6 @@
 from pydantic import BaseModel, Field
 from typing import Optional, Literal
 
-# MAIN PYDANTIC MODELS
-
 # Base
 class MesaBase(BaseModel):
     numero: int = Field(..., ge=1, le=99, description="Número único del 1 al 99")
@@ -10,17 +8,17 @@ class MesaBase(BaseModel):
     ubicacion: Literal["interior", "terraza", "privado"]
     activa: bool = Field(default=True, description="Si la mesa está disponible")
 
-# Create (POST)
+# Create POST
 class MesaCreate(MesaBase):
     pass
 
-# Update (PUT) - Todo opcional
+# Update PUT
 class MesaUpdate(BaseModel):
     numero: Optional[int] = Field(default=None, ge=1, le=99)
     capacidad: Optional[Literal[2, 4, 6, 8]] = None
     ubicacion: Optional[Literal["interior", "terraza", "privado"]] = None
     activa: Optional[bool] = None
 
-# Response (GET)
+# Response GET
 class MesaResponse(MesaBase):
     id: int

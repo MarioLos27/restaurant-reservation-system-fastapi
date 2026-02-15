@@ -16,21 +16,13 @@ from app.exceptions import (
     CancelacionNoPermitidaError
 )
 
-# ---------------------------------------------------------
-# 1. CONFIGURACIÓN INICIAL DE BASE DE DATOS Y APP
-# ---------------------------------------------------------
-
-# Crear tablas (usando la función de SQL puro)
+# Crear tablas
 init_db()
 
-# Instancia de la aplicación (Debe ir antes de los decoradores @app)
+# Instancia de la aplicación
 app = FastAPI(title="La Mesa Dorada API", version="1.0.0")
 
-# ---------------------------------------------------------
-# 2. EVENTOS DE ARRANQUE (DATOS DE PRUEBA)
-# ---------------------------------------------------------
-
-# Evento al arrancar
+# Eventos de arranque
 @app.on_event("startup")
 def startup_event():
     # Conexión directa para insertar datos iniciales
@@ -61,9 +53,7 @@ def startup_event():
     finally:
         conn.close()
 
-# ---------------------------------------------------------
-# 3. MANEJADORES DE EXCEPCIONES (EXCEPTION HANDLERS)
-# ---------------------------------------------------------
+# Exceptions handlers
 
 @app.exception_handler(ClienteNoEncontradoError)
 async def cliente_no_encontrado_handler(request: Request, exc: ClienteNoEncontradoError):
@@ -89,9 +79,7 @@ async def fuera_de_horario_handler(request: Request, exc: FueraDeHorarioError):
 async def cancelacion_no_permitida_handler(request: Request, exc: CancelacionNoPermitidaError):
     return JSONResponse(status_code=400, content={"message": str(exc)})
 
-# ---------------------------------------------------------
-# 4. RUTAS (ROUTERS)
-# ---------------------------------------------------------
+# Routers
 
 app.include_router(clientes.router, prefix="/clientes", tags=["Clientes"])
 app.include_router(mesas.router, prefix="/mesas", tags=["Mesas"])

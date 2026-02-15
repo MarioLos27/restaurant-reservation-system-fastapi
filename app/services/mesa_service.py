@@ -3,18 +3,21 @@ from sqlite3 import Connection
 from datetime import datetime, timedelta
 from app.models import MesaCreate, MesaUpdate
 
+# Metodo para obtener la lista de todas las mesas
 def obtener_todas(conn: Connection):
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM mesas")
     filas = cursor.fetchall()
     return [dict(fila) for fila in filas]
 
+# Metodo para obtener una lista buscando por ID
 def obtener_por_id(conn: Connection, mesa_id: int):
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM mesas WHERE id = ?", (mesa_id,))
     fila = cursor.fetchone()
     return dict(fila) if fila else None
 
+# Metodo para crear una nueva mesa
 def crear_mesa(conn: Connection, mesa_in: MesaCreate):
     cursor = conn.cursor()
     
@@ -39,6 +42,7 @@ def crear_mesa(conn: Connection, mesa_in: MesaCreate):
         "activa": mesa_in.activa
     }
 
+# Metodo para actualizar una mesa ya existente
 def actualizar_mesa(conn: Connection, mesa_id: int, mesa_in: MesaUpdate):
     cursor = conn.cursor()
     
@@ -64,6 +68,7 @@ def actualizar_mesa(conn: Connection, mesa_id: int, mesa_in: MesaUpdate):
     
     return obtener_por_id(conn, mesa_id)
 
+# Metodo para eliminar una mesa
 def eliminar_mesa(conn: Connection, mesa_id: int):
     cursor = conn.cursor()
     
@@ -85,15 +90,12 @@ def eliminar_mesa(conn: Connection, mesa_id: int):
     conn.commit()
     return True
 
+# Metodo para buscar las mesas disponibles
 def buscar_disponibles(conn: Connection, fecha_hora: datetime, comensales: int):
     cursor = conn.cursor()
     fecha_fin_busqueda = fecha_hora + timedelta(hours=2)
 
-    # Lógica con SQL puro:
-    # Seleccionamos mesas que:
-    # 1. Tengan capacidad suficiente
-    # 2. Estén activas
-    # 3. NO estén en la lista de mesas ocupadas en ese horario
+    # Lógica con SQL puro: Tengan capacidad suficiente, estén activas y no estén en la lista de mesas ocupadas en ese horario
     
     query = """
     SELECT * FROM mesas 

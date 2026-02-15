@@ -2,23 +2,23 @@
 import sqlite3
 from sqlite3 import Connection
 
-# Definimos la ruta donde se creará el archivo .db
-# Asumiendo que ejecutas el comando uvicorn desde la raíz del proyecto
+# Definimos la ruta donde se creará el archivo .db asumiendo que ejecutas el comando uvicorn desde la raíz del proyecto
 DB_NAME = "data/restaurante.db"
 
-# Dependencia
-# Esta función se usará en los Routers para obtener la conexión a la base de datos
+
+#  Metodo para obtener la conexion de la base de datos, esta función se usará en los Routers
 def get_db():
     conn = sqlite3.connect(DB_NAME)
-    # Esto permite acceder a las columnas por nombre (row["email"] en lugar de row[2])
+    # Esto permite acceder a las columnas por nombre
     conn.row_factory = sqlite3.Row
     try:
         yield conn
     finally:
         conn.close()
 
+# Metodo para crear las tablas al ejecutar
 def init_db():
-    """Crear tablas usando SQL puro al arrancar"""
+    """Crear tablas usando SQL al arrancar"""
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
     

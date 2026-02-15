@@ -12,6 +12,7 @@ from app.exceptions import (
     CancelacionNoPermitidaError
 )
 
+# Metodo para obtener todas las reservas
 def obtener_todas(conn: Connection, fecha: str = None, cliente_id: int = None):
     cursor = conn.cursor()
     query = "SELECT * FROM reservas"
@@ -19,8 +20,7 @@ def obtener_todas(conn: Connection, fecha: str = None, cliente_id: int = None):
     conditions = []
     
     if fecha:
-        # En SQLite, las fechas se guardan como string. 
-        # Usamos la función date() de SQLite para comparar solo la parte de la fecha.
+        # En SQLite, las fechas se guardan como string, uso la función date() de SQLite para comparar solo la parte de la fecha
         conditions.append("date(fecha_hora_inicio) = date(?)")
         params.append(fecha)
         
@@ -35,26 +35,28 @@ def obtener_todas(conn: Connection, fecha: str = None, cliente_id: int = None):
     filas = cursor.fetchall()
     return [dict(fila) for fila in filas]
 
+# Metodo para obtener una reserva por su ID
 def obtener_por_id(conn: Connection, reserva_id: int):
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM reservas WHERE id = ?", (reserva_id,))
     fila = cursor.fetchone()
     return dict(fila) if fila else None
 
+# Metodo para crear una reserva por su ID
 def crear_reserva(conn: Connection, reserva_in: ReservaCreate):
     cursor = conn.cursor()
 
-    # REGLA 3: Horario de operación
+    # Horario de operación
     hora = reserva_in.fecha_hora_inicio.hour
     if not ((12 <= hora < 16) or (20 <= hora <= 23)):
         raise FueraDeHorarioError("El restaurante abre de 12:00-16:00 y 20:00-00:00")
 
-    # REGLA 6: Cliente existente (Query manual)
+    # Cliente existente
     cursor.execute("SELECT id FROM clientes WHERE id = ?", (reserva_in.cliente_id,))
     if not cursor.fetchone():
         raise ClienteNoEncontradoError(f"No existe el cliente con ID {reserva_in.cliente_id}")
 
-    # Validar Mesa (Query manual)
+    # Validar Mesa
     cursor.execute("SELECT * FROM mesas WHERE id = ?", (reserva_in.mesa_id,))
     mesa = cursor.fetchone()
     if not mesa:
@@ -67,11 +69,11 @@ def crear_reserva(conn: Connection, reserva_in: ReservaCreate):
     if not mesa["activa"]:
         raise MesaNoDisponibleError("La mesa no está activa/habilitada")
 
-    # REGLA 2: Capacidad
+    # Capacidad
     if reserva_in.num_comensales > mesa["capacidad"]:
         raise CapacidadExcedidaError(f"La mesa solo acepta {mesa['capacidad']} personas")
 
-    # REGLA 1: Solapamiento (Query manual)
+    # Solapamiento
     cursor.execute("""
         SELECT id FROM reservas
         WHERE mesa_id = ?
@@ -107,6 +109,7 @@ def crear_reserva(conn: Connection, reserva_in: ReservaCreate):
         "fecha_creacion": datetime.now()
     }
 
+# Metodo para actualizar una reserva ya existente
 def actualizar_reserva(conn: Connection, reserva_id: int, reserva_in: ReservaUpdate):
     reserva_actual = obtener_por_id(conn, reserva_id)
     if not reserva_actual:
@@ -136,6 +139,7 @@ def actualizar_reserva(conn: Connection, reserva_id: int, reserva_in: ReservaUpd
     
     return obtener_por_id(conn, reserva_id)
 
+# Metodo para cambiar el estado de la reserva
 def cambiar_estado(conn: Connection, reserva_id: int, nuevo_estado: str):
     cursor = conn.cursor()
     
@@ -148,6 +152,7 @@ def cambiar_estado(conn: Connection, reserva_id: int, nuevo_estado: str):
     
     return obtener_por_id(conn, reserva_id)
 
+# Metodo para eliminar una reserva
 def eliminar_reserva(conn: Connection, reserva_id: int):
     # REGLA 7: Cancelación controlada (Soft Delete)
     reserva = obtener_por_id(conn, reserva_id)

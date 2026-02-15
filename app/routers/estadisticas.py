@@ -69,7 +69,7 @@ def resumen_general(db: Connection = Depends(get_db)):
 @router.get("/ocupacion/semanal")
 def ocupacion_semanal(fecha_inicio: date, db: Connection = Depends(get_db)):
     """
-    Ocupación de la semana (parámetro: fecha inicio)
+    Ocupación de la semana, parámetro: fecha inicio
     """
     start = datetime(fecha_inicio.year, fecha_inicio.month, fecha_inicio.day)
     end = start + timedelta(days=7)

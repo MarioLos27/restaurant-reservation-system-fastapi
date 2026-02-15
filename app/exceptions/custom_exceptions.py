@@ -1,3 +1,4 @@
+# todas las excepciones
 
 class ClienteNoEncontradoError(Exception):
     """El cliente especificado no existe"""

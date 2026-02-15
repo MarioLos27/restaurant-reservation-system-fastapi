@@ -1,4 +1,4 @@
-# Archivo: data/restaurante.py
+# Lista de archivos de prueba
 
 lista_clientes = [
     {"nombre": "Juan Perez", "email": "juan@example.com", "telefono": "600111222", "notas": "Alergico nueces"},

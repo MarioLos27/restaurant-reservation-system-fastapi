@@ -50,6 +50,9 @@ def crear_mesa(mesa: MesaCreate, db: Connection = Depends(get_db)):
 
 @router.delete("/{id}", status_code=status.HTTP_204_NO_CONTENT)
 def eliminar_mesa(id: int, db: Connection = Depends(get_db)):
+    """
+    Elimina una mesa específica por su ID.
+    """
     try:
         exito = mesa_service.eliminar_mesa(db, id)
         if not exito:

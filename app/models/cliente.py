@@ -12,21 +12,21 @@ class ClienteBase(BaseModel):
     telefono: str = Field(..., min_length=9, max_length=9, description="Teléfono español de 9 dígitos")
     notas: Optional[str] = Field(default=None, description="Preferencias opcionales")
 
-# Create: Para crear (POST). Hereda de Base.
+# Create: Para crear POST. Hereda de Base.
 class ClienteCreate(ClienteBase):
-    """Para crear un cliente (POST)"""
+    """Para crear un cliente POST"""
     pass
 
-# Update: Para actualizar (PUT). Todos los campos son opcionales.
+# Update: Para actualizar PUT, todos los campos son opcionales
 class ClienteUpdate(BaseModel):
-    """Para actualizar un cliente (PUT) - todos opcionales"""
+    """Para actualizar un cliente PUT"""
     nombre: Optional[str] = Field(default=None, min_length=3)
     email: Optional[EmailStr] = None
     telefono: Optional[str] = Field(default=None, min_length=9, max_length=9)
     notas: Optional[str] = None
 
-# Response: Para respuestas (GET). Hereda de Base y añade campos de DB.
+# Response: Para respuestas GET. Hereda de Base y añade campos de DB.
 class ClienteResponse(ClienteBase):
-    """Para respuestas (GET)"""
+    """Para respuestas GET"""
     id: int
     fecha_registro: datetime  
